@@ -1,5 +1,6 @@
 package com.example.personalblog.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -23,7 +24,6 @@ public class Post {
     @Column(name = "title", nullable = false)
     private String title;
 
-    @Lob
     @Column(name = "content", columnDefinition = "TEXT", nullable = false)
     private String content;
 
@@ -33,8 +33,8 @@ public class Post {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @ManyToOne(fetch = FetchType.LAZY) // По умолчанию EAGER, но LAZY часто лучше для производительности
-    @JoinColumn(name = "user_id", nullable = false) // Внешний ключ в таблице posts
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", nullable = false)
     private User author;
 
     @ManyToMany(
@@ -45,6 +45,7 @@ public class Post {
             joinColumns = @JoinColumn(name = "post_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id")
     )
+    @JsonIgnoreProperties("posts")
     private Set<Category> categories = new HashSet<>();
 
     @PrePersist
@@ -58,13 +59,14 @@ public class Post {
         updatedAt = LocalDateTime.now();
     }
 
-//    public void addCategory(Category category) {
-//        this.categories.add(category);
-//        category.getPosts().add(this);
-//    }
-//
-//    public void removeCategory(Category category) {
-//        this.categories.remove(category);
-//        category.getPosts().remove(this);
-//    }
+    public void addCategory(Category category) {
+        this.categories.add(category);
+        category.getPosts().add(this);
+    }
+
+    public void removeCategory(Category category) {
+        this.categories.remove(category);
+        category.getPosts().remove(this);
+    }
 }
+

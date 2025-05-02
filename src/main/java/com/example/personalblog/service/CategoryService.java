@@ -1,5 +1,6 @@
 package com.example.personalblog.service;
 
+import com.example.personalblog.exception.NotFoundException;
 import com.example.personalblog.model.Category;
 import com.example.personalblog.model.Post;
 import com.example.personalblog.repository.CategoryRepository;
@@ -11,6 +12,9 @@ import java.util.List;
 
 @Service
 public class CategoryService {
+
+    private static final String CATEGORY_NOT_FOUND_MSG = "Category not found";
+    private static final String POST_NOT_FOUND_MSG = "Post not found";
 
     private final CategoryRepository categoryRepository;
     private final PostRepository postRepository;
@@ -26,7 +30,7 @@ public class CategoryService {
 
     public Category getCategoryById(Long id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .orElseThrow(() -> new NotFoundException(CATEGORY_NOT_FOUND_MSG));
     }
 
     public List<Category> getAllCategories() {
@@ -35,21 +39,23 @@ public class CategoryService {
 
     public Category updateCategory(Long id, Category categoryDetails) {
         Category category = categoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .orElseThrow(() -> new NotFoundException(CATEGORY_NOT_FOUND_MSG));
         category.setName(categoryDetails.getName());
         return categoryRepository.save(category);
     }
 
     public void deleteCategory(Long id) {
-        categoryRepository.deleteById(id);
+        Category category = categoryRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(CATEGORY_NOT_FOUND_MSG));
+        categoryRepository.delete(category);
     }
 
     @Transactional
     public Post addCategoryToPost(Long postId, Long categoryId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+                .orElseThrow(() -> new NotFoundException(POST_NOT_FOUND_MSG));
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .orElseThrow(() -> new NotFoundException(CATEGORY_NOT_FOUND_MSG));
 
         post.getCategories().add(category);
         return postRepository.save(post);
@@ -58,9 +64,9 @@ public class CategoryService {
     @Transactional
     public void removeCategoryFromPost(Long postId, Long categoryId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+                .orElseThrow(() -> new NotFoundException(POST_NOT_FOUND_MSG));
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new RuntimeException("Category not found"));
+                .orElseThrow(() -> new NotFoundException(CATEGORY_NOT_FOUND_MSG));
 
         post.getCategories().remove(category);
         postRepository.save(post);

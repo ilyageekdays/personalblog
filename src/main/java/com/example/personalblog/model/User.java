@@ -1,5 +1,7 @@
 package com.example.personalblog.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,15 +27,13 @@ public class User {
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
-
     @OneToMany(
             mappedBy = "author",
             cascade = CascadeType.REMOVE,
             fetch = FetchType.LAZY,
             orphanRemoval = true
     )
+    @JsonIgnore
     private Set<Post> posts = new HashSet<>();
 
     public void addPost(Post post) {

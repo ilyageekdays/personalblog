@@ -12,22 +12,13 @@ import java.util.List;
 @Repository
 public interface PostRepository extends JpaRepository<Post, Long> {
 
-    @EntityGraph(attributePaths = {"author", "categories"})
-    @Override
-    List<Post> findAll();
+//    @EntityGraph(attributePaths = {"author", "categories"})
+//    @Override
+//    List<Post> findAll();
 
     @EntityGraph(attributePaths = {"categories"})
     List<Post> findByAuthorId(Long authorId);
 
     @EntityGraph(attributePaths = {"author"})
     List<Post> findByCategoriesId(Long categoryId);
-
-    // Альтернативная реализация с использованием JPQL
-    @Query("SELECT p FROM Post p JOIN p.categories c WHERE c.id = :categoryId")
-    List<Post> findPostsByCategoryId(@Param("categoryId") Long categoryId);
-
-    // Получение постов по нескольким категориям
-    @EntityGraph(attributePaths = {"author"})
-    @Query("SELECT DISTINCT p FROM Post p JOIN p.categories c WHERE c.id IN :categoryIds")
-    List<Post> findPostsByCategoryIds(@Param("categoryIds") List<Long> categoryIds);
 }
