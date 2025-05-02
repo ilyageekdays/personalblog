@@ -81,9 +81,7 @@ public class PostService {
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new NotFoundException(POST_NOT_FOUND_MSG));
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Category not found"
-                ));
+                .orElseThrow(() -> new NotFoundException(CATEGORY_NOT_FOUND_MSG));
 
         post.getCategories().add(category);
         return postRepository.save(post);
