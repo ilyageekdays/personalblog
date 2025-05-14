@@ -28,15 +28,17 @@ public class PostService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
-    private final CacheService cacheService = new CacheService();
+    private final CacheService cacheService;
 
     @Autowired
     public PostService(PostRepository postRepository,
                        UserRepository userRepository,
-                       CategoryRepository categoryRepository) {
+                       CategoryRepository categoryRepository,
+                       CacheService cacheService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
+        this.cacheService = cacheService;
     }
 
     @Transactional
@@ -107,6 +109,7 @@ public class PostService {
                         HttpStatus.NOT_FOUND, POST_NOT_FOUND_MSG));
     }
 
+    @Transactional
     public List<Post> getPosts(String category, String author) {
         String cacheKey = buildCacheKey(category, author);
         List<Post> cached = (List<Post>) cacheService.get(cacheKey);

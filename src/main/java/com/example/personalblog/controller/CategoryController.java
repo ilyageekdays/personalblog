@@ -1,5 +1,6 @@
 package com.example.personalblog.controller;
 
+import com.example.personalblog.cache.CacheService;
 import com.example.personalblog.dto.CategoryDto;
 import com.example.personalblog.dto.CreateCategoryRequest;
 import com.example.personalblog.model.Category;
@@ -22,9 +23,11 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 public class CategoryController {
 
     private final CategoryService categoryService;
+    private final CacheService cacheService;
 
-    public CategoryController(CategoryService categoryService) {
+    public CategoryController(CategoryService categoryService, CacheService cacheService) {
         this.categoryService = categoryService;
+        this.cacheService = cacheService;
     }
 
     @PostMapping

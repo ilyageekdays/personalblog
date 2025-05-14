@@ -6,8 +6,9 @@ import com.example.personalblog.dto.UpdateUserRequest;
 import com.example.personalblog.model.User;
 import com.example.personalblog.repository.UserRepository;
 import java.util.List;
+
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,13 +19,15 @@ public class UserService {
     private static final String USER_NOT_FOUND_MSG = "User not found";
 
     private final UserRepository userRepository;
-    private final CacheService cacheService = new CacheService();
+    private final CacheService cacheService;
 
     @Autowired
-    public UserService(UserRepository userRepository) {
+    public UserService(UserRepository userRepository, CacheService cacheService) {
         this.userRepository = userRepository;
+        this.cacheService = cacheService;
     }
 
+    @Transactional
     public User createUser(CreateUserRequest createUserRequest) {
         if (userRepository.existsByEmail(createUserRequest.getEmail())) {
             throw new ResponseStatusException(
@@ -47,12 +50,14 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Transactional
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, USER_NOT_FOUND_MSG));
     }
 
+    @Transactional
     public List<User> getAllUsers() {
         String cacheKey = "users:";
         List<User> cachedUsers = (List<User>) cacheService.get(cacheKey);
@@ -65,6 +70,7 @@ public class UserService {
         return users;
     }
 
+    @Transactional
     public List<User> findUsersByPostCategory(String categoryName) {
         String cacheKey = "users:category:" + categoryName;
         List<User> cachedUsers = (List<User>) cacheService.get(cacheKey);
@@ -77,6 +83,7 @@ public class UserService {
         return users;
     }
 
+    @Transactional
     public User updateUser(Long id, UpdateUserRequest updateUserRequest) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -105,6 +112,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Transactional
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(

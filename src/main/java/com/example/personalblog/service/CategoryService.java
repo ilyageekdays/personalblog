@@ -1,5 +1,6 @@
 package com.example.personalblog.service;
 
+import com.example.personalblog.cache.CacheService;
 import com.example.personalblog.dto.CreateCategoryRequest;
 import com.example.personalblog.model.Category;
 import com.example.personalblog.model.Post;
@@ -21,11 +22,13 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final PostRepository postRepository;
+    private final CacheService cacheService;
 
     @Autowired
-    public CategoryService(CategoryRepository categoryRepository, PostRepository postRepository) {
+    public CategoryService(CategoryRepository categoryRepository, PostRepository postRepository, CacheService cacheService) {
         this.categoryRepository = categoryRepository;
         this.postRepository = postRepository;
+        this.cacheService = cacheService;
     }
 
     @Transactional
@@ -70,7 +73,7 @@ public class CategoryService {
         }
 
         category.setName(updateCategoryRequest.getName());
-
+        cacheService.invalidateByPrefix("posts:");
         return categoryRepository.save(category);
     }
 
@@ -81,12 +84,11 @@ public class CategoryService {
                         CATEGORY_NOT_FOUND_MSG));
 
         Set<Post> posts = new HashSet<>(category.getPosts());
-
         for (Post post : posts) {
             post.getCategories().remove(category);
             postRepository.save(post);
         }
-
+        cacheService.invalidateByPrefix("posts:");
         categoryRepository.delete(category);
     }
 }
