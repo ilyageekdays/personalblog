@@ -5,158 +5,186 @@ import com.example.personalblog.dto.CreatePostRequest;
 import com.example.personalblog.dto.UpdatePostRequest;
 import com.example.personalblog.model.Category;
 import com.example.personalblog.model.Post;
+import com.example.personalblog.model.User;
 import com.example.personalblog.repository.CategoryRepository;
 import com.example.personalblog.repository.PostRepository;
 import com.example.personalblog.repository.UserRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class PostService {
-    private static final String CATEGORY_NOT_FOUND_MSG = "Category not found";
-    private static final String USER_NOT_FOUND_MSG = "User not found";
-    private static final String POST_NOT_FOUND_MSG = "Post not found";
 
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final CacheService cacheService;
 
-    @Autowired
-    public PostService(PostRepository postRepository,
-                       UserRepository userRepository,
-                       CategoryRepository categoryRepository,
-                       CacheService cacheService) {
+    public PostService(PostRepository postRepository, UserRepository userRepository,
+                       CategoryRepository categoryRepository, CacheService cacheService) {
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.categoryRepository = categoryRepository;
         this.cacheService = cacheService;
     }
 
-    @Transactional
-    public Post createPost(Long id, CreatePostRequest createPostRequest) {
-        Post post = new Post();
-
-        post.setTitle(createPostRequest.getTitle());
-        post.setContent(createPostRequest.getContent());
-        post.setAuthor(userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, USER_NOT_FOUND_MSG)));
-
-        Set<Category> categories = Optional.ofNullable(
-                createPostRequest.getCategoryNames())
-                .orElse(Collections.emptyList())
-                .stream()
-                .map(name -> categoryRepository.findByName(name)
-                        .orElseGet(() -> {
-                            Category newCategory = new Category();
-                            newCategory.setName(name.trim());
-                            return categoryRepository.save(newCategory);
-                        }))
-                .collect(Collectors.toSet());
-
-        post.setCategories(categories);
-        cacheService.invalidateByPrefix("posts:");
-        return postRepository.save(post);
-    }
-
-    @Transactional
-    public Post updatePost(Long id, UpdatePostRequest updatePostRequest) {
-        Post post = postRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, POST_NOT_FOUND_MSG));
-
-        post.setTitle(updatePostRequest.getTitle());
-        post.setContent(updatePostRequest.getContent());
-
-        Set<Category> categories = Optional.ofNullable(updatePostRequest.getCategoryNames())
-                .orElse(Collections.emptyList())
-                .stream()
-                .map(name -> categoryRepository.findByName(name)
-                        .orElseGet(() -> {
-                            Category newCategory = new Category();
-                            newCategory.setName(name.trim());
-                            return categoryRepository.save(newCategory);
-                        }))
-                .collect(Collectors.toSet());
-
-        post.setCategories(categories);
-        cacheService.invalidateByPrefix("posts:");
-        return postRepository.save(post);
-    }
-
-    @Transactional
-    public void deletePost(Long id) {
-        Post post = postRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, POST_NOT_FOUND_MSG));
-        cacheService.invalidateByPrefix("posts:");
-        postRepository.delete(post);
-    }
-
-    @Transactional
-    public Post getPostById(Long id) {
-        return postRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, POST_NOT_FOUND_MSG));
-    }
-
-    @Transactional
-    public List<Post> getPosts(String category, String author) {
-        String cacheKey = buildCacheKey(category, author);
-        List<Post> cached = (List<Post>) cacheService.get(cacheKey);
-
-        if (cached != null) {
-            return cached;
+    public Post createPost(Long userId, CreatePostRequest request) {
+        if (request == null) {
+            throw new NullPointerException("CreatePostRequest cannot be null");
         }
 
-        List<Post> posts = fetchPostsFromDb(category, author);
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        Post post = new Post();
+        post.setTitle(request.getTitle());
+        post.setContent(request.getContent());
+        post.setAuthor(author);
+
+        Set<Category> categories = Optional.ofNullable(request.getCategoryNames())
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(String::trim)
+                .map(name -> categoryRepository.findByName(name)
+                        .orElseGet(() -> {
+                            Category newCategory = new Category();
+                            newCategory.setName(name);
+                            return categoryRepository.save(newCategory);
+                        }))
+                .collect(Collectors.toSet());
+
+        post.setCategories(categories);
+        Post savedPost = postRepository.save(post);
+        cacheService.invalidateByPrefix("posts:");
+        return savedPost;
+    }
+
+    public List<Post> createPostsBulk(Long userId, List<CreatePostRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        User author = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        List<Post> posts = requests.stream().map(request -> {
+            Post post = new Post();
+            post.setTitle(request.getTitle());
+            post.setContent(request.getContent());
+            post.setAuthor(author);
+
+            Set<Category> categories = Optional.ofNullable(request.getCategoryNames())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .map(String::trim)
+                    .map(name -> categoryRepository.findByName(name)
+                            .orElseGet(() -> {
+                                Category newCategory = new Category();
+                                newCategory.setName(name);
+                                return categoryRepository.save(newCategory);
+                            }))
+                    .collect(Collectors.toSet());
+
+            post.setCategories(categories);
+            return post;
+        }).toList();
+
+        List<Post> savedPosts = postRepository.saveAll(posts);
+        cacheService.invalidateByPrefix("posts:");
+        return savedPosts;
+    }
+
+    public Post updatePost(Long postId, UpdatePostRequest request) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+
+        if (request.getTitle() != null) {
+            post.setTitle(request.getTitle());
+        }
+        if (request.getContent() != null) {
+            post.setContent(request.getContent());
+        }
+
+        Set<Category> categories = Optional.ofNullable(request.getCategoryNames())
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(String::trim)
+                .map(name -> categoryRepository.findByName(name)
+                        .orElseGet(() -> {
+                            Category newCategory = new Category();
+                            newCategory.setName(name);
+                            return categoryRepository.save(newCategory);
+                        }))
+                .collect(Collectors.toSet());
+
+        post.setCategories(categories);
+        Post savedPost = postRepository.save(post);
+        cacheService.invalidateByPrefix("posts:");
+        return savedPost;
+    }
+
+    public void deletePost(Long postId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+
+        postRepository.delete(post);
+        cacheService.invalidateByPrefix("posts:");
+    }
+
+    public Post getPostById(Long postId) {
+        return postRepository.findById(postId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+    }
+
+    public List<Post> getPosts(String category, String author) {
+        String cacheKey = "posts:";
+        if (category != null && author != null) {
+            cacheKey += "category:" + category + ":author:" + author;
+        } else if (category != null) {
+            cacheKey += "category:" + category;
+        } else if (author != null) {
+            cacheKey += "author:" + author;
+        }
+
+        List<Post> cachedPosts = (List<Post>) cacheService.get(cacheKey);
+        if (cachedPosts != null) {
+            return cachedPosts;
+        }
+
+        List<Post> posts;
+        if (category != null && author != null) {
+            posts = postRepository.findAllByCategoryNameAndAuthorUsername(category, author);
+        } else if (category != null) {
+            posts = postRepository.findAllByCategoryName(category);
+        } else if (author != null) {
+            posts = postRepository.findAllByAuthorUsername(author);
+        } else {
+            posts = postRepository.findAll();
+        }
 
         cacheService.put(cacheKey, posts);
         return posts;
     }
 
-    private List<Post> fetchPostsFromDb(String category, String author) {
-        if (category != null && author != null) {
-            return postRepository.findAllByCategoryNameAndAuthorUsername(category, author);
-        } else if (category != null) {
-            return postRepository.findAllByCategoryName(category);
-        } else if (author != null) {
-            return postRepository.findAllByAuthorUsername(author);
-        }
-        return postRepository.findAll();
-    }
-
-    private String buildCacheKey(String category, String author) {
-        StringBuilder key = new StringBuilder("posts:");
-        if (category != null) {
-            key.append("category:").append(category.toLowerCase());
-        }
-        if (author != null) {
-            key.append(":author:").append(author.toLowerCase());
-        }
-        return key.toString();
-    }
-
-    @Transactional
     public Post addCategoryToPost(Long postId, Long categoryId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, POST_NOT_FOUND_MSG));
-        Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, CATEGORY_NOT_FOUND_MSG));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
 
-        post.getCategories().add(category);
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+
+        boolean categoryAdded = post.getCategories().add(category);
+        if (categoryAdded) {
+            postRepository.save(post);
+        }
         cacheService.invalidateByPrefix("posts:");
-        return postRepository.save(post);
+        return post;
     }
 }

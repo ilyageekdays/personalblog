@@ -25,7 +25,9 @@ public class CategoryService {
     private final CacheService cacheService;
 
     @Autowired
-    public CategoryService(CategoryRepository categoryRepository, PostRepository postRepository, CacheService cacheService) {
+    public CategoryService(CategoryRepository categoryRepository,
+                           PostRepository postRepository,
+                           CacheService cacheService) {
         this.categoryRepository = categoryRepository;
         this.postRepository = postRepository;
         this.cacheService = cacheService;

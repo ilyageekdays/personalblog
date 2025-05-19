@@ -5,9 +5,8 @@ import com.example.personalblog.dto.CreateUserRequest;
 import com.example.personalblog.dto.UpdateUserRequest;
 import com.example.personalblog.model.User;
 import com.example.personalblog.repository.UserRepository;
-import java.util.List;
-
 import jakarta.transaction.Transactional;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
