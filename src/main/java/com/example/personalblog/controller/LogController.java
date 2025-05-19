@@ -25,7 +25,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -45,13 +44,13 @@ public class LogController {
     @Operation(summary = "Получить логи по дате",
             description = "Получает записи логов из файла логов приложения за указанную дату.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Логи успешно получены",
+        @ApiResponse(responseCode = "200", description = "Логи успешно получены",
                     content = @Content(schema = @Schema(implementation = String.class))),
-            @ApiResponse(responseCode = "400", description = "Неверный формат даты",
+        @ApiResponse(responseCode = "400", description = "Неверный формат даты",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Файл лога не найден",
+        @ApiResponse(responseCode = "404", description = "Файл лога не найден",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера",
+        @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping
@@ -69,7 +68,8 @@ public class LogController {
             }
         } else {
             File mainFile = new File(MAIN_LOG_FILE);
-            File archivedFile = new File(LOG_PATH + "/" + LOG_FILE_PREFIX + logDate + LOG_FILE_EXTENSION);
+            File archivedFile = new File(LOG_PATH + "/"
+                    + LOG_FILE_PREFIX + logDate + LOG_FILE_EXTENSION);
 
             if (mainFile.exists()) {
                 lines.addAll(readLinesForDate(mainFile, logDate));
@@ -91,18 +91,19 @@ public class LogController {
     @Operation(summary = "Скачать файл лога по дате",
             description = "Скачивает файл лога приложения за указанную дату в виде вложения.")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Файл лога успешно скачан",
+        @ApiResponse(responseCode = "200", description = "Файл лога успешно скачан",
                     content = @Content(mediaType = "application/octet-stream")),
-            @ApiResponse(responseCode = "400", description = "Неверный формат даты",
+        @ApiResponse(responseCode = "400", description = "Неверный формат даты",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Записи лога не найдены для даты",
+        @ApiResponse(responseCode = "404", description = "Записи лога не найдены для даты",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера",
+        @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/download")
     public ResponseEntity<Resource> downloadLogFile(
-            @Parameter(description = "Дата, за которую нужно скачать файл лога (формат: yyyy-MM-dd)")
+            @Parameter(description = "Дата, за которую нужно скачать "
+                    + "файл лога (формат: yyyy-MM-dd)")
             @RequestParam("date") String date) {
 
         LocalDate logDate = parseDate(date);
@@ -115,7 +116,8 @@ public class LogController {
             }
         } else {
             File mainFile = new File(MAIN_LOG_FILE);
-            File archivedFile = new File(LOG_PATH + "/" + LOG_FILE_PREFIX + logDate + LOG_FILE_EXTENSION);
+            File archivedFile = new File(LOG_PATH + "/"
+                    + LOG_FILE_PREFIX + logDate + LOG_FILE_EXTENSION);
 
             if (mainFile.exists()) {
                 logEntries.addAll(readLinesForDate(mainFile, logDate));
@@ -152,7 +154,7 @@ public class LogController {
                 .body(resource);
     }
 
-    /** Parse date with human-readable error message */
+    /** Parse date with human-readable error message. */
     private LocalDate parseDate(String dateString) {
         try {
             return LocalDate.parse(dateString, DateTimeFormatter.ISO_LOCAL_DATE);
@@ -162,7 +164,7 @@ public class LogController {
         }
     }
 
-    /** Reads lines related to a specific date from the specified source file */
+    /** Reads lines related to a specific date from the specified source file. */
     private List<String> readLinesForDate(File source, LocalDate date) {
         List<String> out = new ArrayList<>();
         String datePrefix = date.toString();

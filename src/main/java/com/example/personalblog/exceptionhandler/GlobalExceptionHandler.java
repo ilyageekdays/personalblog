@@ -55,10 +55,10 @@ public class GlobalExceptionHandler {
                 .body(error);
     }
 
-    /* ---------------- 400 ---------------- */
 
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex) {
 
         String msg = ex.getConstraintViolations().stream()
                 .map(v -> v.getPropertyPath() + ": " + v.getMessage())
@@ -72,7 +72,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex) {
 
         String msg = ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
@@ -86,7 +87,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleJsonParseException(HttpMessageNotReadableException ex) {
+    public ResponseEntity<ErrorResponse> handleJsonParseException(
+            HttpMessageNotReadableException ex) {
 
         String msg = (ex.getCause() instanceof JsonParseException)
                 ? "Malformed JSON: Check syntax (missing commas, quotes, etc.)"
@@ -99,7 +101,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex) {
 
         String msg = ex.getRequiredType() == LocalDate.class
                 ? "Wrong date format: " + ex.getValue() + ". Use dd.MM.yyyy"

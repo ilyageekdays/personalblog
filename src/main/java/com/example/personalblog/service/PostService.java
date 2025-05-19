@@ -9,15 +9,14 @@ import com.example.personalblog.model.User;
 import com.example.personalblog.repository.CategoryRepository;
 import com.example.personalblog.repository.PostRepository;
 import com.example.personalblog.repository.UserRepository;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class PostService {
@@ -41,7 +40,8 @@ public class PostService {
         }
 
         User author = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "User not found"));
 
         Post post = new Post();
         post.setTitle(request.getTitle());
@@ -72,7 +72,8 @@ public class PostService {
         }
 
         User author = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "User not found"));
 
         List<Post> posts = requests.stream().map(request -> {
             Post post = new Post();
@@ -103,7 +104,8 @@ public class PostService {
 
     public Post updatePost(Long postId, UpdatePostRequest request) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Post not found"));
 
         if (request.getTitle() != null) {
             post.setTitle(request.getTitle());
@@ -132,7 +134,8 @@ public class PostService {
 
     public void deletePost(Long postId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Post not found"));
 
         postRepository.delete(post);
         cacheService.invalidateByPrefix("posts:");
@@ -140,7 +143,8 @@ public class PostService {
 
     public Post getPostById(Long postId) {
         return postRepository.findById(postId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Post not found"));
     }
 
     public List<Post> getPosts(String category, String author) {
@@ -175,10 +179,12 @@ public class PostService {
 
     public Post addCategoryToPost(Long postId, Long categoryId) {
         Post post = postRepository.findById(postId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Post not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Post not found"));
 
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Category not found"));
 
         boolean categoryAdded = post.getCategories().add(category);
         if (categoryAdded) {

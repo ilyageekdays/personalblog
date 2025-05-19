@@ -37,7 +37,6 @@ class CategoryServiceTest {
 
     private Category category;
     private CreateCategoryRequest createRequest;
-    private Post post;
 
     @BeforeEach
     void setUp() {
@@ -48,7 +47,7 @@ class CategoryServiceTest {
         createRequest = new CreateCategoryRequest();
         createRequest.setName("Test Category");
 
-        post = new Post();
+        Post post = new Post();
         post.setId(1L);
         Set<Category> categories = new HashSet<>();
         categories.add(category);
