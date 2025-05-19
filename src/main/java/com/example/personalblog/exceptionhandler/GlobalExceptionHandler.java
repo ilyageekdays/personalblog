@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,8 +24,6 @@ import org.springframework.web.servlet.NoHandlerFoundException;
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
-
-    /* ---------------- 404 ---------------- */
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoHandlerFound(
@@ -115,16 +115,34 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    @ApiResponses(@ApiResponse(responseCode = "400", description = "Invalid argument"))
-    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
-
-        log.warn("400 – {}", ex.getMessage());
+    @ApiResponses(@ApiResponse(responseCode = "400", description = "Неверный формат данных"))
+    public ResponseEntity<?> handleIllegalArgument(IllegalArgumentException ex) {
+        String errorMessage = ex.getMessage();
+        log.warn("400 – {}", errorMessage);
 
         return ResponseEntity.badRequest()
-                .body(new ErrorResponse(HttpStatus.BAD_REQUEST.value(),
-                        "Bad Request", ex.getMessage()));
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Bad Request",
+                        errorMessage
+                ));
     }
 
+    @ExceptionHandler(DateTimeParseException.class)
+    @ApiResponses(@ApiResponse(responseCode = "400", description = "Неверный формат даты"))
+    public ResponseEntity<?> handleDateTimeParseException(DateTimeParseException ex) {
+        String errorMessage = String.format("Invalid date format. Expected format: yyyy-MM-dd. Error at position: %d",
+                ex.getErrorIndex());
+
+        log.warn("400 – {}", errorMessage);
+
+        return ResponseEntity.badRequest()
+                .body(new ErrorResponse(
+                        HttpStatus.BAD_REQUEST.value(),
+                        "Bad Request",
+                        errorMessage
+                ));
+    }
 
     @ExceptionHandler(Exception.class)
     @ApiResponses(@ApiResponse(responseCode = "500", description = "Unexpected server error"))

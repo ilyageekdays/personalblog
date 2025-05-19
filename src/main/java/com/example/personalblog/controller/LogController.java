@@ -88,16 +88,16 @@ public class LogController {
         return ResponseEntity.ok(lines);
     }
 
-    @Operation(summary = "Скачать файл лога по дате",
-            description = "Скачивает файл лога приложения за указанную дату в виде вложения.")
+    @Operation(summary = "Получить логи по дате",
+            description = "Получает записи логов из файла логов приложения за указанную дату.")
     @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Файл лога успешно скачан",
-                    content = @Content(mediaType = "application/octet-stream")),
-        @ApiResponse(responseCode = "400", description = "Неверный формат даты",
+            @ApiResponse(responseCode = "200", description = "Логи успешно получены",
+                    content = @Content(schema = @Schema(implementation = String.class))),
+            @ApiResponse(responseCode = "400", description = "Неверный формат даты",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "404", description = "Записи лога не найдены для даты",
+            @ApiResponse(responseCode = "404", description = "Файл лога не найден",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
-        @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера",
+            @ApiResponse(responseCode = "500", description = "Внутренняя ошибка сервера",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping("/download")
@@ -160,7 +160,7 @@ public class LogController {
             return LocalDate.parse(dateString, DateTimeFormatter.ISO_LOCAL_DATE);
         } catch (java.time.format.DateTimeParseException ex) {
             log.warn("Invalid date format: {}", dateString, ex);
-            throw new IllegalArgumentException("Invalid date format. Please use yyyy-MM-dd");
+            throw new IllegalArgumentException("Invalid date format: '" + dateString + "'. Please use yyyy-MM-dd", ex);
         }
     }
 
