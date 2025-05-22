@@ -1,6 +1,8 @@
 package com.example.personalblog.service;
 
+import com.example.personalblog.dto.LogFileInfo;
 import com.example.personalblog.dto.LogStatusResponse;
+import com.example.personalblog.dto.LogTaskInfo;
 import com.example.personalblog.exception.ResourceNotFoundException;
 import java.io.BufferedReader;
 import java.io.File;
@@ -28,51 +30,63 @@ public class AsyncLogService {
     private static final String MAIN_LOG_FILE = LOG_PATH + "/personal-blog.log";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    private final ConcurrentHashMap<String, String> logStatuses = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, LogTaskInfo> logTasks = new ConcurrentHashMap<>();
 
     @Async
     public CompletableFuture<String> createLogFile(String date) {
         String logId = UUID.randomUUID().toString();
-        logStatuses.put(logId, "IN_PROGRESS");
+        LocalDate dateObj = LocalDate.parse(date, DATE_FORMATTER);
+        String fileName = buildLogFilePath(dateObj);
+        logTasks.put(logId, new LogTaskInfo("IN_PROGRESS", fileName, date));
 
         CompletableFuture.runAsync(() -> {
             try {
                 // Имитация долгой операции
-                Thread.sleep(60000);
-
+                Thread.sleep(20000);
                 LocalDate logDate = parseDate(date);
-                String fileName = buildLogFilePath(logDate);
                 createLogFileIfNotExists(logDate, fileName);
-
-                logStatuses.put(logId, "COMPLETED");
-
+                logTasks.get(logId).setStatus("COMPLETED");
             } catch (Exception e) {
-                logStatuses.put(logId, "FAILED");
-                throw new RuntimeException("Log creation failed", e);
+                logTasks.get(logId).setStatus("FAILED");
+                log.error("Log creation failed", e);
             }
         });
         return CompletableFuture.completedFuture(logId);
     }
 
-    public LogStatusResponse getLogStatus(String logId, String date) throws InterruptedException {
-        String status = logStatuses.getOrDefault(logId, "NOT_FOUND");
-        if ("COMPLETED".equals(status) && !verifyLogFileExists(date)) {
-            status = "FAILED";
+    public LogStatusResponse getLogStatus(String logId) {
+        LogTaskInfo taskInfo = logTasks.get(logId);
+        if (taskInfo == null) {
+            return new LogStatusResponse(logId, "NOT_FOUND", null);
         }
-        return new LogStatusResponse(logId, status);
+
+        // Дополнительная проверка существования файла
+        if ("COMPLETED".equals(taskInfo.getStatus())) {
+            File logFile = new File(taskInfo.getFilePath());
+            if (!logFile.exists()) {
+                taskInfo.setStatus("FAILED");
+            }
+        }
+
+        return new LogStatusResponse(
+                logId,
+                taskInfo.getStatus(),
+                taskInfo.getDate()
+        );
     }
 
-    public File getLogFile(String date) throws IOException, InterruptedException {
-        LocalDate logDate = parseDate(date);
-        String fileName = buildLogFilePath(logDate);
-        File logFile = new File(fileName);
-
-        if (!logFile.exists() || logFile.length() == 0) {
-            throw new ResourceNotFoundException("Log file not found,"
-                    + " empty or not completed for date: " + date);
+    public LogFileInfo getLogFile(String logId) throws IOException {
+        LogTaskInfo taskInfo = logTasks.get(logId);
+        if (taskInfo == null) {
+            throw new ResourceNotFoundException("Log task not found");
         }
 
-        return logFile;
+        File logFile = new File(taskInfo.getFilePath());
+        if (!logFile.exists() || logFile.length() == 0) {
+            throw new ResourceNotFoundException("Log file not found or empty");
+        }
+
+        return new LogFileInfo(logFile, taskInfo.getDate());
     }
 
     private LocalDate parseDate(String date) {
@@ -104,16 +118,6 @@ public class AsyncLogService {
             for (String entry : collectLogEntries(date)) {
                 writer.write(entry + System.lineSeparator());
             }
-        }
-    }
-
-    private boolean verifyLogFileExists(String date) throws InterruptedException {
-        try {
-            return getLogFile(date).exists();
-        } catch (InterruptedException e) {
-            throw new InterruptedException();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 

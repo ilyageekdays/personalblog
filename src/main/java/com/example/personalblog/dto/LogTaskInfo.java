@@ -1,14 +1,12 @@
 package com.example.personalblog.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
-public class LogStatusResponse {
-    private String logId;
+public class LogTaskInfo {
     private String status;
+    private String filePath;
     private String date;
 }
