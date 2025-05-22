@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -19,11 +18,25 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 @Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatusException(ResponseStatusException ex) {
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+        ErrorResponse error = new ErrorResponse(
+                status.value(),
+                status.getReasonPhrase(),
+                ex.getReason()
+        );
+
+        log.warn("{} – {}", status.value(), ex.getReason());
+        return ResponseEntity.status(status).body(error);
+    }
 
     @ExceptionHandler(NoHandlerFoundException.class)
     public ResponseEntity<ErrorResponse> handleNoHandlerFound(
@@ -131,7 +144,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DateTimeParseException.class)
     @ApiResponses(@ApiResponse(responseCode = "400", description = "Неверный формат даты"))
     public ResponseEntity<?> handleDateTimeParseException(DateTimeParseException ex) {
-        String errorMessage = String.format("Invalid date format. Expected format: yyyy-MM-dd. Error at position: %d",
+        String errorMessage = String.format("Invalid date format. "
+                        + "Expected format: yyyy-MM-dd. Error at position: %d",
                 ex.getErrorIndex());
 
         log.warn("400 – {}", errorMessage);
